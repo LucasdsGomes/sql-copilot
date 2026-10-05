@@ -1,0 +1,42 @@
+[project]
+name = "sql-copilot"
+version = "0.1.0"
+description = "Natural-language SQL agent with security guardrails, exposed through a rate-limited API."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "langchain>=0.3",
+    "langchain-anthropic>=0.3",
+    "langchain-community>=0.3",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "slowapi>=0.1.9",
+    "sqlglot>=25",
+    "sqlalchemy>=2.0",
+    "pydantic-settings>=2.4",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "httpx>=0.27",
+    "ruff>=0.6",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
