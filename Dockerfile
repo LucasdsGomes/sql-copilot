@@ -24,13 +24,13 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# ── Install Python dependencies (no dev extras) ────────────────────────────
-# Copy only the files needed for installation first so Docker can cache this
-# layer independently of source-code changes.
+# ── Install the package (no dev extras) ────────────────────────────────────
+# The installed copy in site-packages (root-owned) is what runs. The source tree and pip's
+# build/ directory are only needed during the install, so they are deleted right after.
 COPY pyproject.toml README.md ./
 COPY src/ ./src/
 
-RUN pip install --no-cache-dir .
+RUN pip install --no-cache-dir .  && rm -rf /app/src /app/build /app/pyproject.toml /app/README.md
 
 # ── Copy application code ──────────────────────────────────────────────────
 COPY scripts/ ./scripts/
@@ -43,8 +43,11 @@ ENV DATABASE_PATH=/app/data/sales.db
 RUN python scripts/seed_db.py
 
 # ── Non-root user ─────────────────────────────────────────────────────────
+# Everything under /app stays root-owned and read-only for the runtime user: the app only needs
+# to READ the database (it opens it with mode=ro), so a compromised process cannot modify the
+# scripts or the data.
 RUN useradd --no-create-home --shell /bin/false appuser \
- && chown -R appuser:appuser /app
+ && chmod -R a+rX /app
 USER appuser
 
 # ── Runtime defaults ──────────────────────────────────────────────────────
@@ -62,6 +65,8 @@ HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
 
 # ── Entrypoint ────────────────────────────────────────────────────────────
 # PORT and FORWARDED_ALLOW_IPS are expanded by the shell at container start.
+# Keep a SINGLE worker: the rate limiter keeps its counters in process memory, so extra workers
+# (or replicas) would each enforce their own quota. Use a shared store (e.g. Redis) before scaling.
 CMD ["sh", "-c", \
      "exec uvicorn sql_copilot.api.main:app \
       --host 0.0.0.0 \

@@ -69,11 +69,14 @@ jobs:
             if curl --silent --fail http://localhost:8000/health; then
               echo ""
               echo "Container is ready."
-              break
+              exit 0
             fi
             echo "Waiting… ($i)"
             sleep 1
           done
+          echo "FAIL: container did not become ready"
+          docker logs sql-copilot-ci
+          exit 1
 
       - name: Smoke-test GET /health → {"status":"ok"}
         run: |
@@ -90,6 +93,16 @@ jobs:
             --data '{"question":"hello"}')
           echo "Status: $STATUS"
           [ "$STATUS" -eq 401 ] || (echo "FAIL: expected 401, got $STATUS"; exit 1)
+
+      - name: Hardening - runs as non-root and app files are read-only
+        run: |
+          USER_NAME=$(docker exec sql-copilot-ci whoami)
+          echo "Runs as: $USER_NAME"
+          [ "$USER_NAME" != "root" ] || (echo "FAIL: container runs as root"; exit 1)
+          if docker exec sql-copilot-ci sh -c 'touch /app/scripts/tamper 2>/dev/null'; then
+            echo "FAIL: runtime user can write to /app"; exit 1
+          fi
+          echo "OK: /app is not writable by the runtime user"
 
       - name: Stop and remove container
         if: always()
