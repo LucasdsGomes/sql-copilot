@@ -2,7 +2,8 @@
 
 Text-to-SQL agent: natural-language question -> LangChain (Claude) writes SQL -> security validator
 -> read-only SQLite -> LLM summarises. Served through a FastAPI API (in progress).
-Portfolio project; code, comments, docs and commits are in **English**.
+Portfolio project; code, comments, docs and commits are in **English**. The one exception is
+`README.md`, which is in Portuguese on purpose: keep it in Portuguese when editing it.
 
 ## Commands (Windows, venv at `.venv`)
 ```
