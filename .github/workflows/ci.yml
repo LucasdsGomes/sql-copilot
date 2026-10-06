@@ -1,0 +1,96 @@
+# CI: lint + test (no API key needed) + Docker smoke-test
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ─── Job 1: ruff + pytest on 3 Python versions ────────────────────────────
+  test:
+    name: "test (Python ${{ matrix.python-version }})"
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install project + dev extras
+        run: pip install -e ".[dev]"
+
+      - name: Lint (ruff)
+        run: ruff check .
+
+      - name: Test (pytest)
+        run: pytest -q
+
+  # ─── Job 2: Docker build + smoke-test ─────────────────────────────────────
+  docker:
+    name: docker build & smoke-test
+    runs-on: ubuntu-latest
+    # Run even when the test matrix has a failure so we get independent signal
+    needs: []
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build --tag sql-copilot:ci .
+
+      - name: Start container
+        run: |
+          docker run --detach \
+            --name sql-copilot-ci \
+            --publish 8000:8000 \
+            --env API_KEYS=ci-key \
+            sql-copilot:ci
+
+      - name: Wait for /health to be ready (up to 30 s)
+        run: |
+          for i in $(seq 1 30); do
+            if curl --silent --fail http://localhost:8000/health; then
+              echo ""
+              echo "Container is ready."
+              break
+            fi
+            echo "Waiting… ($i)"
+            sleep 1
+          done
+
+      - name: Smoke-test GET /health → {"status":"ok"}
+        run: |
+          BODY=$(curl --silent http://localhost:8000/health)
+          echo "Response: $BODY"
+          echo "$BODY" | grep -q '"status"' || (echo "FAIL: unexpected body"; exit 1)
+          echo "$BODY" | grep -q '"ok"'     || (echo "FAIL: status not ok";  exit 1)
+
+      - name: Smoke-test POST /ask without key → HTTP 401
+        run: |
+          STATUS=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+            --request POST http://localhost:8000/ask \
+            --header 'Content-Type: application/json' \
+            --data '{"question":"hello"}')
+          echo "Status: $STATUS"
+          [ "$STATUS" -eq 401 ] || (echo "FAIL: expected 401, got $STATUS"; exit 1)
+
+      - name: Stop and remove container
+        if: always()
+        run: docker rm --force sql-copilot-ci || true
