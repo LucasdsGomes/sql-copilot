@@ -29,7 +29,7 @@ pytest
 ## Roadmap
 
 - [x] Project skeleton
-- [ ] Sample database (SQLite)
+- [x] Sample database (SQLite, read-only access)
 - [ ] LangChain SQL agent
 - [ ] Security validator
 - [ ] FastAPI + auth + rate limit
