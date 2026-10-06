@@ -22,6 +22,9 @@ DEFAULT_BLOCKED_COLUMNS = frozenset({"email"})
 BLOCKED_FUNCTIONS = frozenset({
     "load_extension", "readfile", "writefile", "edit", "fts3_tokenizer",
     "zeroblob", "randomblob",  # memory-exhaustion vectors
+    # environment / connection introspection
+    "sqlite_version", "sqlite_source_id", "sqlite_compileoption_used",
+    "sqlite_compileoption_get", "changes", "total_changes", "last_insert_rowid",
 })
 MAX_QUERY_LENGTH = 2000
 
@@ -59,12 +62,27 @@ def validate_sql(sql: str, policy: ValidationPolicy | None = None) -> str:
     if not isinstance(root, exp.Select | exp.SetOperation):
         raise UnsafeQueryError(f"Only SELECT queries are allowed (got {type(root).__name__}).")
 
+    _check_structure(root, policy)
     _check_tables(root, policy)
     _check_functions(root)
     _check_columns(root, policy)
     _enforce_limit(root, policy.max_rows)
 
     return root.sql(dialect="sqlite", comments=False)
+
+
+def _check_structure(root: exp.Expression, policy: ValidationPolicy) -> None:
+    """Constructs with no legitimate use here; rejecting them keeps the rest simple."""
+    for with_ in root.find_all(exp.With):
+        if with_.args.get("recursive"):
+            raise UnsafeQueryError("Recursive queries are not allowed.")
+    for cte in root.find_all(exp.CTE):
+        name = cte.alias_or_name.lower()
+        # A CTE named like a real table would make table checks ambiguous.
+        if name in policy.allowed_tables or name.startswith("sqlite_"):
+            raise UnsafeQueryError(f"CTE name '{cte.alias_or_name}' is reserved.")
+    if root.find(exp.Values):
+        raise UnsafeQueryError("VALUES lists are not allowed.")
 
 
 def _check_tables(root: exp.Expression, policy: ValidationPolicy) -> None:
@@ -83,7 +101,10 @@ def _check_tables(root: exp.Expression, policy: ValidationPolicy) -> None:
 
 def _check_functions(root: exp.Expression) -> None:
     for func in root.find_all(exp.Func):
-        name = func.sql_name().lower() if not isinstance(func, exp.Anonymous) else func.name.lower()
+        # sqlglot maps sqlite_version() to its own node type, so a name check alone misses it.
+        if isinstance(func, exp.CurrentVersion):
+            raise UnsafeQueryError("Function 'sqlite_version' is not allowed.")
+        name =func.sql_name().lower() if not isinstance(func, exp.Anonymous) else func.name.lower()
         if name in BLOCKED_FUNCTIONS:
             raise UnsafeQueryError(f"Function '{name}' is not allowed.")
 

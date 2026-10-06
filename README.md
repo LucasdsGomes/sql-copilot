@@ -31,7 +31,7 @@ pytest
 - [x] Project skeleton
 - [x] Sample database (SQLite, read-only access)
 - [x] LangChain SQL agent (3-step chain, tested with a fake LLM)
-- [x] Security validator (sqlglot, 38 attack tests)
+- [x] Security validator (sqlglot) + DB limits (timeout, value size), red-teamed by a second agent
 - [ ] FastAPI + auth + rate limit
 - [ ] Claude skill `sql-guardrails`
 - [ ] Tests + CI (GitHub Actions)
