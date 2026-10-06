@@ -1,0 +1,34 @@
+# Git history / local secrets
+.git
+.env
+
+# Virtual environment
+.venv
+
+# Generated database (seeded at image build time)
+data/*.db
+data/*.sqlite
+
+# Python cache
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+
+# Test + lint caches
+.pytest_cache
+.ruff_cache
+
+# Test suite (not needed in the image)
+tests
+
+# Editor / OS noise
+.DS_Store
+*.swp
+*.swo
+Thumbs.db
+
+# Build artefacts
+*.egg-info
+build
+dist
