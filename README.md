@@ -31,7 +31,7 @@ pytest
 - [x] Project skeleton
 - [x] Sample database (SQLite, read-only access)
 - [ ] LangChain SQL agent
-- [ ] Security validator
+- [x] Security validator (sqlglot, 60+ attack tests)
 - [ ] FastAPI + auth + rate limit
 - [ ] Claude skill `sql-guardrails`
 - [ ] Tests + CI (GitHub Actions)
