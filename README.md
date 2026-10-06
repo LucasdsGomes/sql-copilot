@@ -30,7 +30,7 @@ pytest
 
 - [x] Project skeleton
 - [x] Sample database (SQLite, read-only access)
-- [ ] LangChain SQL agent
+- [x] LangChain SQL agent (3-step chain, tested with a fake LLM)
 - [x] Security validator (sqlglot, 38 attack tests)
 - [ ] FastAPI + auth + rate limit
 - [ ] Claude skill `sql-guardrails`
