@@ -97,6 +97,13 @@ python scripts/seed_db.py       # cria data/sales.db com dados fictícios
 pytest                          # não precisa de chave nem de rede: o LLM é simulado nos testes
 ```
 
+O `API_KEYS` vem **vazio** no `.env.example` de propósito: com ele vazio a API rejeita tudo. Gere a sua
+chave e coloque no `.env`:
+
+```bash
+python -c "import secrets; print(secrets.token_hex(32))"
+```
+
 Faça uma pergunta direto pela linha de comando (chama a API da Anthropic):
 
 ```bash
@@ -162,3 +169,7 @@ Construído com agentes de IA para código: Claude Code na implementação e Ant
 independente de red team. O [`AGENTS.md`](AGENTS.md) guarda o contexto do projeto compartilhado entre
 os agentes, e a skill `sql-guardrails` registra a política de SQL para que ela não seja enfraquecida
 por acidente.
+
+## Licença
+
+MIT. Veja [LICENSE](LICENSE).
