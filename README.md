@@ -32,7 +32,23 @@ pytest
 - [x] Sample database (SQLite, read-only access)
 - [x] LangChain SQL agent (3-step chain, tested with a fake LLM)
 - [x] Security validator (sqlglot) + DB limits (timeout, value size), red-teamed by a second agent
-- [ ] FastAPI + auth + rate limit
+- [x] FastAPI + auth + rate limit
 - [ ] Claude skill `sql-guardrails`
 - [ ] Tests + CI (GitHub Actions)
 - [ ] Docker + free-tier cloud deploy
+
+## Run the API
+
+```bash
+.venv\Scripts\python scripts/seed_db.py
+.venv\Scripts\python -m uvicorn sql_copilot.api.main:app --port 8000
+```
+
+```bash
+curl -X POST localhost:8000/ask -H "X-API-Key: <one of API_KEYS>" -H "Content-Type: application/json" -d "{\"question\": \"Top 3 cities by revenue?\"}"
+```
+
+- `GET /health` - no auth, not rate limited.
+- `POST /ask` - requires `X-API-Key`; limited per valid key (and per IP for invalid keys) by `RATE_LIMIT`.
+- Clients only get generic errors (`401`, `422`, `429`, `503`); details stay in the server log.
+- Interactive docs at `/docs`.
