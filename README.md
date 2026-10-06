@@ -33,7 +33,7 @@ pytest
 - [x] LangChain SQL agent (3-step chain, tested with a fake LLM)
 - [x] Security validator (sqlglot) + DB limits (timeout, value size), red-teamed by a second agent
 - [x] FastAPI + auth + rate limit
-- [ ] Claude skill `sql-guardrails`
+- [x] Claude skill `sql-guardrails`
 - [ ] Tests + CI (GitHub Actions)
 - [ ] Docker + free-tier cloud deploy
 

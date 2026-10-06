@@ -34,6 +34,6 @@ Portfolio project; code, comments, docs and commits are in **English**.
 ## Roadmap
 - [x] 1 skeleton - [x] 2 sample DB - [x] 3 LangChain agent - [x] 4 validator (+ red-team hardening)
 - [x] 5 FastAPI: `POST /ask`, `GET /health`, API-key auth, rate limit (slowapi), generic errors
-- [ ] 6 Claude skill `sql-guardrails` in `.claude/skills/`
+- [x] 6 Claude skill `sql-guardrails` in `.claude/skills/`
 - [ ] 7 CI: GitHub Actions (ruff + pytest, no secrets needed)
 - [ ] 8 Docker + free-tier cloud deploy (DB is seeded at build time; it is not in git)
