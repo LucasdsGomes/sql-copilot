@@ -3,8 +3,11 @@
 Security notes
   * Fail closed: with no API_KEYS configured, every /ask request is rejected.
   * Rate limiting runs as middleware, i.e. BEFORE authentication, so wrong keys are limited too.
-    The limiter bucket is the API key only when it is valid; otherwise the client IP. Otherwise an
-    attacker could dodge the limit by sending a different fake key on every request.
+    The bucket is the API key only when it is valid; every other request shares ONE global bucket.
+    Not keyed by IP on purpose: behind cloud proxies the peer IP varies per request (measured on
+    Render: ~3 proxy IPs, so an IP bucket multiplied the quota), and trusting X-Forwarded-For
+    would let a client forge its identity. Requests without a valid key can do nothing useful
+    anyway, so sharing their quota costs legitimate users nothing.
   * Clients only ever see generic error messages; the real reason goes to the server log.
 """
 
@@ -21,7 +24,6 @@ from pydantic import BaseModel, ConfigDict, Field
 from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
-from slowapi.util import get_remote_address
 
 from sql_copilot.agent.chain import SqlCopilot, build_llm
 from sql_copilot.config import Settings, get_settings
@@ -30,6 +32,7 @@ logger = logging.getLogger("sql_copilot.api")
 
 MAX_BODY_BYTES = 4096
 API_KEY_HEADER = "X-API-Key"
+ANONYMOUS_BUCKET = "anonymous"
 
 
 class AskRequest(BaseModel):
@@ -84,7 +87,7 @@ def create_app(settings: Settings | None = None, copilot: SqlCopilot | None = No
         header = request.headers.get(API_KEY_HEADER)
         if _is_valid_key(header, valid_keys):
             return f"key:{header}"
-        return f"ip:{get_remote_address(request)}"
+        return ANONYMOUS_BUCKET
 
     limiter = Limiter(key_func=rate_limit_key, default_limits=[settings.rate_limit])
     app = FastAPI(title="SQL Copilot", version="0.1.0")

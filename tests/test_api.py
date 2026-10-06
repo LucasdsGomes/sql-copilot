@@ -165,3 +165,21 @@ def test_rotating_fake_keys_does_not_evade_the_limit(db_path):
     client = make_client(db_path, "SELECT 1", rate_limit="3/minute")
     statuses = [ask(client, key=f"guess-{i}").status_code for i in range(6)]
     assert statuses == [401, 401, 401, 429, 429, 429]
+
+
+def test_requests_without_a_valid_key_share_one_bucket_whatever_their_ip(db_path):
+    # Behind a proxy the peer IP varies per request; the quota must not depend on it.
+    settings = Settings(api_keys=KEY, rate_limit="3/minute", database_path=db_path)
+    app = create_app(settings, SqlCopilot(RecordingFake(responses=["SELECT 1"]), db_path))
+    statuses = []
+    for i in range(6):
+        client = TestClient(app, client=(f"10.0.0.{i}", 50000 + i))
+        statuses.append(ask(client, key=f"guess-{i}").status_code)
+    assert statuses == [401, 401, 401, 429, 429, 429]
+
+
+def test_a_flood_of_anonymous_requests_does_not_block_a_valid_key(db_path):
+    client = make_client(db_path, "SELECT COUNT(*) FROM orders", "ok", rate_limit="3/minute")
+    for i in range(6):
+        ask(client, key=f"guess-{i}")
+    assert ask(client, key=KEY).status_code == 200

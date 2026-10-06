@@ -22,7 +22,7 @@ services:
         value: 10/minute
       - key: MAX_ROWS
         value: "100"
-      # FORWARDED_ALLOW_IPS is deliberately NOT set (stays 127.0.0.1). Trusting "*" would let a
-      # client forge X-Forwarded-For and dodge the IP rate limit. The cost: requests without a
-      # valid API key share one rate-limit bucket (the proxy IP), which also caps brute-forcing.
+      # FORWARDED_ALLOW_IPS is deliberately NOT set. The rate limiter does not use client IPs: every
+      # request without a valid API key shares one global bucket (see api/main.py), so proxy
+      # topology cannot change the quota and X-Forwarded-For cannot be forged to dodge it.
       # PORT is injected by Render and read by the Dockerfile.

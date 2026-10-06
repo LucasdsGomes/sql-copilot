@@ -49,6 +49,6 @@ curl -X POST localhost:8000/ask -H "X-API-Key: <one of API_KEYS>" -H "Content-Ty
 ```
 
 - `GET /health` - no auth, not rate limited.
-- `POST /ask` - requires `X-API-Key`; limited per valid key (and per IP for invalid keys) by `RATE_LIMIT`.
+- `POST /ask` - requires `X-API-Key`; limited by `RATE_LIMIT`: each valid key has its own quota, and all requests without a valid key share one.
 - Clients only get generic errors (`401`, `422`, `429`, `503`); details stay in the server log.
 - Interactive docs at `/docs`.
