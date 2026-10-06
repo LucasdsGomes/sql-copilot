@@ -1,0 +1,28 @@
+# Render Blueprint: deploys the Docker image as a free web service.
+# Secrets are never stored here: `sync: false` makes Render ask for the value in its dashboard.
+services:
+  - type: web
+    name: sql-copilot
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: ohio
+    # CD without extra tooling: deploy only after the GitHub Actions checks (ruff, pytest, docker
+    # smoke test) have passed for the commit.
+    autoDeployTrigger: checksPass
+    healthCheckPath: /health
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false # paste it in the Render dashboard; never commit it
+      - key: API_KEYS
+        generateValue: true # random 256-bit key; read it from the service's Environment tab
+      - key: ANTHROPIC_MODEL
+        value: claude-haiku-4-5-20251001
+      - key: RATE_LIMIT
+        value: 10/minute
+      - key: MAX_ROWS
+        value: "100"
+      # FORWARDED_ALLOW_IPS is deliberately NOT set (stays 127.0.0.1). Trusting "*" would let a
+      # client forge X-Forwarded-For and dodge the IP rate limit. The cost: requests without a
+      # valid API key share one rate-limit bucket (the proxy IP), which also caps brute-forcing.
+      # PORT is injected by Render and read by the Dockerfile.
