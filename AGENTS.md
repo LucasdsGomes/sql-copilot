@@ -12,6 +12,9 @@ Portfolio project; code, comments, docs and commits are in **English**.
 .venv\Scripts\python scripts/ask.py "..."  # real Anthropic call (costs money; ask the user first)
 ```
 
+Also: `scripts/check_sql.py "SELECT ..."` runs a query through the validator (SAFE/REJECTED).
+Project skill `sql-guardrails` (`.claude/skills/`) documents the SQL policy.
+
 ## Layout
 - `src/sql_copilot/config.py` - settings from `.env` (pydantic-settings)
 - `src/sql_copilot/db/` - `seed.py` (fake data), `connection.py` (read-only, timeout, size cap), `schema.py`
